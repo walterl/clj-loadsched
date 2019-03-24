@@ -78,6 +78,7 @@
     ))
 
 (defn remove-other-groups
+  "Removes groups from `state-groups`'s value sets, other than `group`, removes empty items."
   [stage-groups group]
   (->> stage-groups
        (map (fn [[stage groups]]
@@ -135,14 +136,12 @@
       (:help options)
       (do
         (print-usage summary)
-        (System/exit 0)
-        )
+        (System/exit 0))
 
       errors
       (let [error-msg (string/join \newline (map #(str "* " %) errors))]
         (println error-msg)
-        (System/exit 1)
-        )
+        (System/exit 1))
 
       :else
       (load-and-print-schedule options)

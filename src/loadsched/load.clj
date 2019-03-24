@@ -42,36 +42,32 @@
      :day-groups (map-day-groups (rest fields))}
     ))
 
-(defn append-records
-  [coll [day-of-month group]]
-  (update-in
-    coll [:records]
-    #(conj (or % []) {:day-of-month day-of-month
-                      :stage (:stage coll)
-                      :start-time (:start-time coll)
-                      :end-time (:end-time coll)
-                      :group group})))
+(defn append-new-record
+  [coll [day-of-month group] stage start-time end-time]
+  (conj coll {:day-of-month day-of-month
+              :stage stage
+              :start-time start-time
+              :end-time end-time
+              :group group}))
 
 (defn denormalize-line
-  [results line]
-  (let [{:keys [records start-time end-time]} results
+  [coll line]
+  (let [{:keys [records start-time end-time]} coll
         line-start-time (:start-time line)
         line-end-time (:end-time line)]
     (if (and line-start-time line-end-time)
+      ; It's a line with only start/end times
       {:records records :start-time line-start-time :end-time line-end-time}
 
-      (let [initial-rec {:stage (:stage line)
-                         :start-time start-time
-                         :end-time end-time}]
+      ; Otherwise it's a line with stage and day/groups info
+      (let [stage (:stage line)]
         (->> (:day-groups line)
-             (reduce append-records initial-rec)
-             :records
+             (reduce #(append-new-record %1 %2 stage start-time end-time) [])
              (concat records)
-             (assoc {} :records)
-             (into results)
+             (assoc coll :records)
              )))))
 
-(defn collect-records
+(defn lines-to-records
   "Turns a sequence of parsed lines (`parse-fields`) into a sequence of complete schedule records."
   [parsed-lines]
   (->> parsed-lines
@@ -81,35 +77,30 @@
        ))
 
 (defn collect-prev-stages-groups
+  "Collect all groups from stage prior to `stage`, in a set."
   [stage-groups stage]
   (apply
     union
     (map #(get stage-groups %) (range 1 stage))))
 
 (defn add-stages-groups
-  [coll rec]
-  (let [{:keys [results time-slot]} coll
-        {:keys [stage group]} rec]
-    {:results (assoc-in
-                results [time-slot stage]
-                (conj (collect-prev-stages-groups (get results time-slot) stage) group))
-     :time-slot time-slot}))
+  "Add the groups for the specified stage and time slot."
+  [coll {:keys [stage group]} time-slot]
+  (assoc-in
+    coll [time-slot stage]
+    (conj (collect-prev-stages-groups (get coll time-slot) stage) group)))
 
-(defn group-results
-  [{:keys [results]} [time-slot recs]]
-  (->> recs
-       (reduce add-stages-groups {:results results :time-slot time-slot})
-       :results
-       (merge results)
-       (assoc {} :results)
-       ))
+(defn group-stage-groups
+  "Add stage data for the specified time slot."
+  [coll [time-slot grouped-recs]]
+  (reduce #(add-stages-groups %1 %2 time-slot) coll grouped-recs))
 
 (defn summarize-stage-groups
+  "Summarize schedule data by grouping groups under time slot and stage."
   [records]
   (->> records
        (group-by (juxt :day-of-month :start-time :end-time))
-       (reduce group-results {:results {}})
-       :results
+       (reduce group-stage-groups {})
        (sort-by (fn [[[dom ts te] v]] [dom (util/time-hour-to-int ts)]))
        ))
 
@@ -119,6 +110,6 @@
   (->> (load-lines filename)
        (map parse-fields)
        (filter (comp not nil?))
-       collect-records
+       lines-to-records
        summarize-stage-groups
        ))
