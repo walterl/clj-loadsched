@@ -11,10 +11,18 @@
     (comp not empty?)
     (string/split line #"\s*\|\s*")))
 
+(defn is-comment-line?
+  "Checks if `line` starts with a `#`."
+  [line]
+  (string/starts-with? line "#"))
+
 (defn load-lines
   "Returns vector field vectors from specified file. See `split-line`."
   [filename]
-  (map split-line (string/split (slurp filename) #"\n")))
+  (->> (slurp filename)
+       string/split-lines
+       (filter (comp not is-comment-line?))
+       (map split-line)))
 
 (defn stage-to-num
   "Converts string `StageN` to integer N."
