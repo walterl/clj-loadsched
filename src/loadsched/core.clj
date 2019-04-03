@@ -1,6 +1,7 @@
 (ns loadsched.core
   (:require [clojure.java.io :refer [file]]
             [clojure.pprint :as pprint]
+            [clojure.set :refer [intersection]]
             [clojure.string :as string]
             [clojure.tools.cli :refer [parse-opts]]
             [clojure.tools.trace :refer [deftrace]]
@@ -17,10 +18,11 @@
     :default "schedule.txt"
     :validate [#(.isFile (file %)) "Invalid file name"]
     ]
-   ["-g" "--group GROUP" "Filter on specified group."
-    :default :all
+   ["-g" "--group GROUP" "Filter on specified groups. Default: include all groups."
+    :default []
     :parse-fn #(Integer/parseInt %)
     :validate [#(<= 1 % 16) "Must be between 1 and 16"]
+    :assoc-fn (fn [opts _ value] (assoc opts :group (conj (:group opts) value)))
     ]
    ["-s" "--stage STAGE" "Schedule for this stage only. If not given, it is queried from Eskom."
     :default :auto
@@ -28,16 +30,15 @@
     :validate [#(<= 1 % 8) "Must be between 1 and 8"]
     ]
    [nil "--print-schedule" "Print the entire schedule."]
-   ["-v" "--verbose" "Display extra information about program operation."]
    ["-h" "--help" "Display help text and exit."]
    ])
 
 (defn print-usage [summary]
   (->> ["Load, filter and print load shedding schedule."
         ""
-        "Usage: loadsched [[-d DAY_OF_MONTH] [-f FILENAME] [-g GROUP] [-s STAGE] | --print-schedule]"
+        "Usage: loadsched [[-d DAY_OF_MONTH] [-f FILENAME] [-g GROUP...] [-s STAGE] | --print-schedule]"
         ""
-        "Default behavior is to print the entire schedule (all groups) for current load shedding stage, today."
+        "Default behavior is to print the entire schedule (all groups) for current load shedding stage, for today."
         ""
         "Options:"
         summary]
@@ -78,23 +79,27 @@
     ))
 
 (defn remove-other-groups
-  "Removes groups from `state-groups`'s value sets, other than `group`, removes empty items."
-  [stage-groups group]
-  (->> stage-groups
-       (map (fn [[stage groups]]
-              (if (contains? groups group)
-                [stage #{group}]
-                nil)))
-       (filter #(not (nil? (last %))))
-       (into {})
-       ))
+  "Removes groups from `state-groups`'s value sets, that are *not* in `keep-groups`, removes empty items."
+  [stage-groups keep-groups]
+  (let [keep-groups-set (set keep-groups)]
+    (->> stage-groups
+         (map (fn [[stage groups]]
+                (let [overlap (intersection keep-groups-set (set groups))]
+                  (if (empty? overlap)
+                    nil
+                    [stage overlap]
+                    ))
+                ))
+         (filter #(not (nil? (last %))))
+         (into {})
+         )))
 
-(defn filter-by-group
-  [schedule group-num]
-  (if (= group-num :all)
+(defn filter-by-groups
+  [schedule filter-groups]
+  (if (empty? filter-groups)
     schedule
     (->> schedule
-         (map (fn [[k v]] [k (remove-other-groups v group-num)]))
+         (map (fn [[k v]] [k (remove-other-groups v filter-groups)]))
          (filter #(not (empty? (last %))))
          (into {})
          )))
@@ -125,7 +130,7 @@
         (-> schedule
             (filter-by-stage (:stage options))
             (filter-by-day (:day-of-month options))
-            (filter-by-group (:group options))
+            (filter-by-groups (:group options))
             )))))
 
 (defn -main
