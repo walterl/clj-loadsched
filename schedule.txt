@@ -1,3 +1,4 @@
+# Schedule for Tshwane municipality, from http://www.tshwane.gov.za/sites/Departments/Public-works-and-infrastructure/Pages/Load-Shedding.aspx
 | 1:00   | 3:30  |
 | Stage1 |       | 1  | 13 | 9  | 5  | 2  | 14 | 10 | 6  | 3  | 15 | 11 | 7  | 4  | 16 | 12 | 8  | 5  | 1  | 13 | 9  | 6  | 2  | 14 | 10 | 7  | 3  | 15 | 11 | 8  | 4  | 16 |
 | Stage2 |       | 5  | 1  | 13 | 9  | 6  | 2  | 14 | 10 | 7  | 3  | 15 | 11 | 8  | 4  | 16 | 12 | 9  | 5  | 1  | 13 | 10 | 6  | 2  | 14 | 11 | 7  | 3  | 15 | 12 | 8  | 4  |
