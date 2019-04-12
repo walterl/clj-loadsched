@@ -1,6 +1,6 @@
 (defproject loadsched "0.1.0-SNAPSHOT"
-  :description "FIXME: write description"
-  :url "http://example.com/FIXME"
+  :description "A simple command-line utility for querying a load shedding schedule."
+  :url "https://github.com/walterl/clj-loadsched/"
   :license {:name "MIT"
             :url "https://github.com/walterl/clj-loadsched/blob/master/LICENSE"}
   :dependencies [[org.clojure/clojure "1.10.0"]
