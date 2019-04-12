@@ -96,8 +96,7 @@
     (->> stage-groups
          (map (fn [[stage groups]]
                 (let [overlap (intersection keep-groups-set (set groups))]
-                  (if (empty? overlap)
-                    nil
+                  (when-not (empty? overlap)
                     [stage overlap]
                     ))
                 ))
