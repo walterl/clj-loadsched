@@ -76,11 +76,11 @@
 (defn lines-to-records
   "Turns a sequence of parsed lines (`parse-fields`) into a sequence of complete schedule records."
   [parsed-lines]
-  (->> parsed-lines
-       (reduce denormalize-line {:records [] :start-time nil :end-time nil})
-       :records
-       (sort-by (juxt :day-of-month :stage (comp util/time-hour-to-int :start-time)))
-       ))
+  (let [initial {:records [] :start-time nil :end-time nil}
+        rec-info (reduce denormalize-line initial parsed-lines)]
+    (sort-by
+      (juxt :day-of-month :stage (comp util/time-hour-to-int :start-time))
+      (:records rec-info))))
 
 (defn collect-prev-stages-groups
   "Collect all groups from stage prior to `stage`, in a set."
