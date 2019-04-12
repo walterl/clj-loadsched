@@ -47,7 +47,18 @@
        ))
 
 (defn fetch-stage []
-  (Integer/parseUnsignedInt (slurp "http://loadshedding.eskom.co.za/LoadShedding/getstatus")))
+  (let [state-id (Integer/parseUnsignedInt (slurp "http://loadshedding.eskom.co.za/LoadShedding/getstatus"))]
+    (case state-id
+      99
+      (throw (ex-info "Failed to lookup current load shedding stage."
+                      {:error? true :state-id state-id}))
+
+      1
+      (throw (ex-info "No load shedding in progress! \\o/"
+                      {:error? false :state-id state-id}))
+
+      (dec state-id)))
+  )
 
 (defn fetch-today []
   (.get (java.util.Calendar/getInstance) java.util.Calendar/DAY_OF_MONTH))
@@ -149,5 +160,10 @@
         (System/exit 1))
 
       :else
-      (load-and-print-schedule options)
+      (try
+        (load-and-print-schedule options)
+        (catch clojure.lang.ExceptionInfo e
+          (let [is-error? (-> e ex-data :error?)]
+            (println (if is-error? "!" "#") (.getMessage e))
+            (System/exit (if is-error? 1 0)))))
       )))
