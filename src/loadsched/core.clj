@@ -69,7 +69,7 @@
     (= stage :auto)
     (filter-by-stage schedule (fetch-stage))
 
-    (not (nil? stage))
+    (some? stage)
     (map (fn [[k v]] [k {stage (get v stage)}]) schedule)
 
     :else
@@ -82,7 +82,7 @@
     (= day-of-month :today)
     (filter-by-day schedule (fetch-today))
 
-    (not (nil? day-of-month))
+    (some? day-of-month)
     (filter #(= (first (first %)) day-of-month) schedule)
 
     :else
