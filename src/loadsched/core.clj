@@ -101,7 +101,7 @@
                     [stage overlap]
                     ))
                 ))
-         (filter #(not (nil? (last %))))
+         (remove (comp nil? last))
          (into {})
          )))
 
@@ -111,7 +111,7 @@
     schedule
     (->> schedule
          (map (fn [[k v]] [k (remove-other-groups v filter-groups)]))
-         (filter #(not (empty? (last %))))
+         (remove (comp empty? last))
          (into {})
          )))
 

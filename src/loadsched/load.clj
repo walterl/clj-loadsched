@@ -7,9 +7,7 @@
 (defn split-line
   "Split the given line on pipe (|) characters."
   [line]
-  (filter
-    (comp not empty?)
-    (string/split line #"\s*\|\s*")))
+  (remove empty? (string/split line #"\s*\|\s*")))
 
 (defn is-comment-line?
   "Checks if `line` starts with a `#`."
@@ -21,7 +19,7 @@
   [filename]
   (->> (slurp filename)
        string/split-lines
-       (filter (comp not is-comment-line?))
+       (remove is-comment-line?)
        (map split-line)))
 
 (defn stage-to-num
@@ -117,7 +115,7 @@
   [filename]
   (->> (load-lines filename)
        (map parse-fields)
-       (filter (comp not nil?))
+       (remove nil?)
        lines-to-records
        summarize-stage-groups
        ))
